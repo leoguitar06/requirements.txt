@@ -57,11 +57,10 @@ async def on_message(message):
               f"Analizza questa immagine di una costruzione e il testo allegato"
               f" scritto dall'utente: '{testo_utente}'.\n1. Determina se l'opera"
               " è 'In costruzione' o 'Completata'.\n2. Estrai dal testo"
-              " dell'utente il nome della persona per cui è stata fatta o che"
-              " l'ha costruita (se menzionato, es. 'Gabri', 'Marco', ecc.)."
-              " Rispondi ESATTAMENTE in questo formato:\nSTATO: [In"
-              " costruzione / Completata]\nAUTORE: [Il nome trovato, oppure"
-              " 'nessuno']"
+              " dell'utente il nome della persona o l'autore (es. 'cristolino2014',"
+              " 'Gabri', ecc.). Rispondi ESATTAMENTE in questo formato:\nSTATO:"
+              " [In costruzione / Completata]\nAUTORE: [Il nome trovato,"
+              " oppure 'nessuno']"
           )
 
           # Tentativi multipli con attesa progressiva per superare l'errore 503
@@ -88,7 +87,6 @@ async def on_message(message):
             except Exception as api_err:
               tentativo += 1
               if "503" in str(api_err) and tentativo < max_tentativi:
-                # Attesa crescente: 5 secondi, poi 10, poi 15
                 attesa = tentativo * 5
                 print(
                     f"Server sovraccarico (Errore 503). Tentativo"
@@ -114,8 +112,8 @@ async def on_message(message):
           if "completata" in stato.lower():
             if autore.lower() != "nessuno" and autore != "":
               await message.channel.send(
-                  f"Costruzione completata da {autore}! Scrivetemi che altre"
-                  " costruzioni fare!"
+                  f"Costruzione richiesta da {autore} completata! Scrivetemi"
+                  " che altre costruzioni fare!"
               )
             else:
               await message.channel.send(
