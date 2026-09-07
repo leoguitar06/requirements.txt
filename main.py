@@ -82,9 +82,8 @@ async def on_message(message):
 
         except Exception as e:
           print(f"Errore durante l'analisi dell'immagine con l'IA: {e}")
-          await message.channel.send(
-              "Ops, c'è stato un errore nell'analizzare la foto!"
-          )
+          # Mostra l'errore tecnico direttamente su Discord per diagnosticarlo subito
+          await message.channel.send(f"⚠️ Errore tecnico: `{str(e)}`")
 
   await bot.process_commands(message)
 
