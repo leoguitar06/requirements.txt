@@ -41,7 +41,9 @@ async def on_message(message):
         print(
             f"Immagine ricevuta da {message.author}: {attachment.filename}"
         )
-        await message.channel.send(
+
+        # Invia il messaggio di caricamento e salvalo in una variabile
+        msg_analisi = await message.channel.send(
             "🔍 *Sto analizzando la foto della costruzione...*"
         )
 
@@ -108,6 +110,12 @@ async def on_message(message):
               elif riga.startswith("AUTORE:"):
                 autore = riga.replace("AUTORE:", "").strip()
 
+          # Cancella il messaggio "Sto analizzando..." prima di mandare il risultato
+          try:
+            await msg_analisi.delete()
+          except Exception:
+            pass
+
           # Invia il messaggio finale in base a ciò che ha rilevato l'IA
           if "completata" in stato.lower():
             if autore.lower() != "nessuno" and autore != "":
@@ -125,6 +133,11 @@ async def on_message(message):
 
         except Exception as e:
           print(f"Errore durante l'analisi dell'immagine con l'IA: {e}")
+          # Cancella comunque il messaggio di caricamento in caso di errore tecnico
+          try:
+            await msg_analisi.delete()
+          except Exception:
+            pass
           await message.channel.send(f"⚠️ Errore tecnico: `{str(e)}`")
 
   await bot.process_commands(message)
