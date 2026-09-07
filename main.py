@@ -64,8 +64,8 @@ async def on_message(message):
               " 'nessuno']"
           )
 
-          # Tentativi automatici in caso di sovraccarico (Errore 503)
-          max_tentativi = 3
+          # Tentativi multipli con attesa progressiva per superare l'errore 503
+          max_tentativi = 4
           tentativo = 0
           risposta_ia = None
 
@@ -88,11 +88,14 @@ async def on_message(message):
             except Exception as api_err:
               tentativo += 1
               if "503" in str(api_err) and tentativo < max_tentativi:
+                # Attesa crescente: 5 secondi, poi 10, poi 15
+                attesa = tentativo * 5
                 print(
-                    f"Server sovraccarico (Tentativo {tentativo}/{max_tentativi})."
-                    " Riprovo tra 4 secondi..."
+                    f"Server sovraccarico (Errore 503). Tentativo"
+                    f" {tentativo}/{max_tentativi}. Riprovo tra {attesa}"
+                    " secondi..."
                 )
-                time.sleep(4)
+                time.sleep(attesa)
               else:
                 raise api_err
 
