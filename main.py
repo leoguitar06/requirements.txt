@@ -1,6 +1,7 @@
 from io import BytesIO
 import os
 import threading
+import time
 import discord
 from discord.ext import commands
 from flask import Flask
@@ -59,24 +60,40 @@ async def on_message(message):
               " finita, pulita, rifinita o completa)."
           )
 
-          # Invia l'immagine a Gemini usando il nuovo modello aggiornato
-          response = ai_client.models.generate_content(
-              model="gemini-3.6-flash",
-              contents=[
-                  prompt,
-                  {
-                      "inline_data": {
-                          "data": image_bytes,
-                          "mime_type": "image/jpeg",
-                      }
-                  },
-              ],
-          )
+          # Tentativi automatici in caso di sovraccarico (Errore 503)
+          max_tentativi = 3
+          tentativo = 0
+          risposta_ia = None
 
-          risposta_ia = response.text.strip()
+          while tentativo < max_tentativi:
+            try:
+              response = ai_client.models.generate_content(
+                  model="gemini-3.6-flash",
+                  contents=[
+                      prompt,
+                      {
+                          "inline_data": {
+                              "data": image_bytes,
+                              "mime_type": "image/jpeg",
+                          }
+                      },
+                  ],
+              )
+              risposta_ia = response.text.strip()
+              break  # Se ha successo, esce dal ciclo
+            except Exception as api_err:
+              tentativo += 1
+              if "503" in str(api_err) and tentativo < max_tentativi:
+                print(
+                    f"Server sovraccarico (Tentativo {tentativo}/{max_tentativi})."
+                    " Rprovo tra 4 secondi..."
+                )
+                time.sleep(4)
+              else:
+                raise api_err  # Rilancia l'errore se non è un 503 o se abbiamo esaurito i tentativi
 
           # Invia la risposta nel canale in base a ciò che ha visto l'IA
-          if "completata" in risposta_ia.lower():
+          if risposta_ia and "completata" in risposta_ia.lower():
             await message.channel.send(
                 "Costruzione completata! Scrivetemi che altre costruzioni fare!"
             )
@@ -85,7 +102,7 @@ async def on_message(message):
 
         except Exception as e:
           print(f"Errore durante l'analisi dell'immagine con l'IA: {e}")
-          # Mostra l'errore tecnico direttamente su Discord per diagnosticarlo subito
+          # Mostra l'errore tecnico direttamente su Discord se fallisce del tutto
           await message.channel.send(f"⚠️ Errore tecnico: `{str(e)}`")
 
   await bot.process_commands(message)
