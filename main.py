@@ -49,15 +49,19 @@ async def on_message(message):
           # Scarica l'immagine in memoria
           image_bytes = await attachment.read()
 
-          # Prompt per l'intelligenza artificiale visiva
+          # Prende il testo scritto dall'utente insieme alla foto (la didascalia)
+          testo_utente = message.content if message.content else ""
+
+          # Prompt avanzato per Gemini: analizza foto e testo per trovare lo stato e il nome
           prompt = (
-              "Analizza questa immagine di una costruzione/struttura in un"
-              " videogioco o cantiere. Rispondi ESATTAMENTE con una di queste"
-              " due frasi, senza aggiungere altro:\n1. 'In costruzione!'"
-              " (se l'opera è incompleta, in corso, con materiali sparsi,"
-              " impalcature o lavori a metà)\n2. 'Costruzione completata!"
-              " Scrivetemi che altre costruzioni fare!' (se l'opera è"
-              " finita, pulita, rifinita o completa)."
+              f"Analizza questa immagine di una costruzione e il testo allegato"
+              f" scritto dall'utente: '{testo_utente}'.\n1. Determina se l'opera"
+              " è 'In costruzione' o 'Completata'.\n2. Estrai dal testo"
+              " dell'utente il nome della persona per cui è stata fatta o che"
+              " l'ha costruita (se menzionato, es. 'Gabri', 'Marco', ecc.)."
+              " Rispondi ESATTAMENTE in questo formato:\nSTATO: [In"
+              " costruzione / Completata]\nAUTORE: [Il nome trovato, oppure"
+              " 'nessuno']"
           )
 
           # Tentativi automatici in caso di sovraccarico (Errore 503)
@@ -80,29 +84,46 @@ async def on_message(message):
                   ],
               )
               risposta_ia = response.text.strip()
-              break  # Se ha successo, esce dal ciclo
+              break
             except Exception as api_err:
               tentativo += 1
               if "503" in str(api_err) and tentativo < max_tentativi:
                 print(
                     f"Server sovraccarico (Tentativo {tentativo}/{max_tentativi})."
-                    " Rprovo tra 4 secondi..."
+                    " Riprovo tra 4 secondi..."
                 )
                 time.sleep(4)
               else:
-                raise api_err  # Rilancia l'errore se non è un 503 o se abbiamo esaurito i tentativi
+                raise api_err
 
-          # Invia la risposta nel canale in base a ciò che ha visto l'IA
-          if risposta_ia and "completata" in risposta_ia.lower():
-            await message.channel.send(
-                "Costruzione completata! Scrivetemi che altre costruzioni fare!"
-            )
+          # Elabora la risposta dell'IA
+          stato = "In costruzione"
+          autore = "nessuno"
+
+          if risposta_ia:
+            for riga in risposta_ia.split("\n"):
+              if riga.startswith("STATO:"):
+                stato = riga.replace("STATO:", "").strip()
+              elif riga.startswith("AUTORE:"):
+                autore = riga.replace("AUTORE:", "").strip()
+
+          # Invia il messaggio finale in base a ciò che ha rilevato l'IA
+          if "completata" in stato.lower():
+            if autore.lower() != "nessuno" and autore != "":
+              await message.channel.send(
+                  f"Costruzione completata da {autore}! Scrivetemi che altre"
+                  " costruzioni fare!"
+              )
+            else:
+              await message.channel.send(
+                  "Costruzione completata! Scrivetemi che altre costruzioni"
+                  " fare!"
+              )
           else:
             await message.channel.send("In costruzione!")
 
         except Exception as e:
           print(f"Errore durante l'analisi dell'immagine con l'IA: {e}")
-          # Mostra l'errore tecnico direttamente su Discord se fallisce del tutto
           await message.channel.send(f"⚠️ Errore tecnico: `{str(e)}`")
 
   await bot.process_commands(message)
