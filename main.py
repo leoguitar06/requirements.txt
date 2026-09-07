@@ -59,9 +59,9 @@ async def on_message(message):
               " finita, pulita, rifinita o completa)."
           )
 
-          # Invia l'immagine a Gemini usando il formato inline corretto
+          # Invia l'immagine a Gemini usando il nuovo modello aggiornato
           response = ai_client.models.generate_content(
-              model="gemini-2.5-flash",
+              model="gemini-3.6-flash",
               contents=[
                   prompt,
                   {
