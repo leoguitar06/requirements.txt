@@ -26,6 +26,11 @@ async def on_ready():
 
 
 @bot.event
+async def on_resumed():
+  print("Connessione a Discord ripristinata con successo!")
+
+
+@bot.event
 async def on_message(message):
   # Ignora i messaggi inviati dal bot stesso per evitare loop infiniti
   if message.author == bot.user:
@@ -143,7 +148,7 @@ async def on_message(message):
   await bot.process_commands(message)
 
 
-# === SERVER WEB FLASK (Per mantenere attivo il bot 24/7 su Render) ===
+# === SERVER WEB FLASK (Per mantenere attivo il server web su Render) ===
 app = Flask("")
 
 
@@ -158,11 +163,20 @@ def run_flask():
 
 
 if __name__ == "__main__":
+  # Avvia Flask in un thread separato
   t_flask = threading.Thread(target=run_flask)
   t_flask.daemon = True
   t_flask.start()
 
   if DISCORD_TOKEN:
-    bot.run(DISCORD_TOKEN)
+    # Ciclo di riconnessione automatica: se il bot si disconnette, riprova a partire dopo 5 secondi
+    while True:
+      try:
+        print("Avvio del bot Discord in corso...")
+        bot.run(DISCORD_TOKEN)
+      except Exception as e:
+        print(f"Il bot si è disconnesso o è crashato: {e}")
+        print("Tentativo di riavvio del bot tra 5 secondi...")
+        time.sleep(5)
   else:
-    print("ERRORE: DISCORD_TOKEN non trovato nelle variabili ambiente!")
+     print("ERRORE: DISCORD_TOKEN non trovato nelle variabili ambiente!")
