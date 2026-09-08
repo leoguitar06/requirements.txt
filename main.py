@@ -163,20 +163,13 @@ def run_flask():
 
 
 if __name__ == "__main__":
-  # Avvia Flask in un thread separato
+  # Avvia Flask in un thread separato in background
   t_flask = threading.Thread(target=run_flask)
   t_flask.daemon = True
   t_flask.start()
 
+  # Avvio pulito del bot Discord
   if DISCORD_TOKEN:
-    # Ciclo di riconnessione automatica: se il bot si disconnette, riprova a partire dopo 5 secondi
-    while True:
-      try:
-        print("Avvio del bot Discord in corso...")
-        bot.run(DISCORD_TOKEN)
-      except Exception as e:
-        print(f"Il bot si è disconnesso o è crashato: {e}")
-        print("Tentativo di riavvio del bot tra 5 secondi...")
-        time.sleep(5)
+    bot.run(DISCORD_TOKEN)
   else:
-     print("ERRORE: DISCORD_TOKEN non trovato nelle variabili ambiente!")
+    print("ERRORE: DISCORD_TOKEN non trovato nelle variabili ambiente!")
